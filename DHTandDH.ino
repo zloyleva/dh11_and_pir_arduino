@@ -1,23 +1,43 @@
 #include "DHT.h"
 
-#define DHTPIN 3     // Digital pin connected to the DHT sensor
-#define DHTTYPE DHT11   // DHT 11
+int ledPin = 7;        // choose the pin for the LED
+int inputPin = 2;       // choose the input pin (for PIR sensor)
+
+int pirState = LOW;     // we start, assuming no motion detected
+int val = 0;            // variable for reading the pin status
+ 
+int DHTPIN = 3;         // Digital pin connected to the DHT sensor
+   
+#define DHTTYPE DHT11   // Sensor type DHT 11
 
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
+  pinMode(ledPin, OUTPUT);      // declare LED as output
+  pinMode(inputPin, INPUT);     // declare sensor as input
+  
   Serial.begin(9600);
   Serial.println(F("DHTxx test!"));
+  Serial.println(F("PIR sensor test!"));
 
   dht.begin();
 }
 
 void loop() {
-  // Wait a few seconds between measurements.
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  delay(800);
 
+  // Need delay becouse DH11 has long loop for measurement
+  for(int i=0; i<500; i++){
+    PIRSensorHandler();
+    delay(2);
+  }
+
+  measurementHumidityAndTemp();
+}
+
+/**
+ * Measurement Air parametrs
+ */
+void measurementHumidityAndTemp(){
   
   float h = dht.readHumidity();
   float t = dht.readTemperature();
@@ -33,4 +53,29 @@ void loop() {
   Serial.print(t);
   Serial.print(F("°C "));
   Serial.println("");
+  
+}
+
+void PIRSensorHandler(){
+  val = digitalRead(inputPin);  // read input value
+  if (val == HIGH) {            // check if the input is HIGH
+    digitalWrite(ledPin, HIGH);  // turn LED ON
+    logPIRBehaviorDetectMotion();
+  } else {
+    digitalWrite(ledPin, LOW); // turn LED OFF
+    logPIRBehaviorDontDetectMotion();
+  }
+}
+
+void logPIRBehaviorDetectMotion(){
+  if (pirState == LOW) {
+    Serial.println("Motion detected!");
+    pirState = HIGH; //Set detect motion status
+  }
+}
+void logPIRBehaviorDontDetectMotion(){
+  if(pirState == HIGH){
+    Serial.println("Motion ended!");
+    pirState = LOW; //Set no motion status
+  }
 }
